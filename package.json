@@ -1,7 +1,7 @@
 {
   "name": "web-tools-nunjucks",
   "version": "0.1.0",
-  "description": "Web-tools plugin and pipeline for compiling Nunjucks templates",
+  "description": "Web-tools pipeline for compiling Nunjucks templates",
   "repository": {
     "type": "git",
     "url": "https://github.com/jayeb/web-tools-nunjucks"
