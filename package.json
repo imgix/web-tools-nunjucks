@@ -8,7 +8,7 @@
   },
   "author": "Jason Eberle",
   "license": "BSD",
-  "main": "tools/pipeline.nunjucks.js",
+  "main": "tools/web-tools-nunjucks.js",
   "dependencies": {
     "gulp-util": "^3.0.8",
     "lodash": "4.6.1",
