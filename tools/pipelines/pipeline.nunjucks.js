@@ -41,6 +41,30 @@ module.exports = function setupNunjucksPipeline(gulp) {
         throw new gutil.PluginError('nunjucksPipeline', 'Could not compile template: ' + file.basename);
       }
 
+      compiledTemplate._originalRender = compiledTemplate.render;
+
+      compiledTemplate.render = function () {
+        var parsedError;
+
+        try {
+          return compiledTemplate._originalRender.apply(compiledTemplate, arguments);
+        } catch (error) {
+          parsedError = /^.*\[Line\s(\d+),\sColumn\s(\d+)\]\s*(.*)$/.exec(error.message);
+
+          if (!!parsedError) {
+            throw {
+              filename: path.basename(file.path),
+              filepath: file.path,
+              line: parseInt(_.get(parsedError, '[1]', '0'), 10),
+              char: parseInt(_.get(parsedError, '[2]', '0'), 10),
+              message: _.get(parsedError, '[3]', error.message.replace('\n', ''))
+            };
+          } else {
+            throw error;
+          }
+        }
+      };
+
       gulp[options.storeAs][path.basename(file.path)] = compiledTemplate;
 
       callback();
