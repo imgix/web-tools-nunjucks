@@ -10,6 +10,8 @@
   "license": "BSD",
   "main": "tools/web-tools-nunjucks.js",
   "dependencies": {
+    "@imgix/js-core": "^3.7.0",
+    "cheerio": "^1.0.0-rc.12",
     "gulp-util": "^3.0.8",
     "lodash": "4.6.1",
     "nunjucks": "^3.0.1",

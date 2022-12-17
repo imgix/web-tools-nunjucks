@@ -3,7 +3,9 @@ var _ = require('lodash'),
     path = require('path'),
     gutil = require('gulp-util'),
     nunjucks = require('nunjucks'),
-    through = require('through2');
+    through = require('through2'),
+    cheerio = require('cheerio'),
+    ImgixClient = require('@imgix/js-core');
 
 module.exports = function setupNunjucksPipeline(gulp) {
   return function nunjucksPipeline(options) {
@@ -47,7 +49,46 @@ module.exports = function setupNunjucksPipeline(gulp) {
         var parsedError;
 
         try {
-          return compiledTemplate._originalRender.apply(compiledTemplate, arguments);
+          //load INJECTED and html-parsed template and select only all <img/> tags (for now), intiate imgix core client
+          var $ = cheerio.load(compiledTemplate._originalRender.apply(compiledTemplate, arguments)),
+          imageTags = $('img'),
+          client = new ImgixClient({ domain: 'ix-www.imgix.net' });
+
+          //interate through each <img /> element
+          imageTags.each((index, imgTag) => {
+            var attributes = imgTag.attribs,
+            path = attributes['ix-path'],
+            imgURL,
+            params
+            
+            //if element has `ix-path` attribute, we can set host domain to `ix-host`, 
+            // otherwise the default is `ix-www.imgix.net` anyway
+            //set params to parsed `ix-params` or pass an empty object
+            if (path) {
+              if (attributes['ix-host']) client.settings.domain = attributes['ix-host'];
+
+              params = attributes['ix-params'] ? JSON.parse(attributes['ix-params']) : {};
+            }
+
+            //if element is using `ix-src` or `src` attribute, we can parse out that URL 
+            // and set the path and params from the URL
+            else {
+              imgURL = attributes['ix-src'] ? new URL(attributes['ix-src']) : new URL(attributes['src']);
+
+              if (imgURL.hostname !== client.settings.domain) client.settings.domain = imgURL.hostname;
+
+              path = imgURL.pathname;
+
+              params = Object.fromEntries(imgURL.searchParams);
+            }
+
+            //set `src` and `srcset` attributes of <img/> tag.
+            attributes['src'] = client.buildURL(path, params);
+
+            attributes['srcset'] = client.buildSrcSet(path, params);
+          })
+          //return mutated html
+          return $.html();
         } catch (error) {
           parsedError = /^.*\[Line\s(\d+),\sColumn\s(\d+)\]\s*(.*)$/.exec(error.message);
 
