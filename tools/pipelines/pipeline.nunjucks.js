@@ -50,16 +50,17 @@ module.exports = function setupNunjucksPipeline(gulp) {
 
         //transforms html <img> and <picture> tags with @imgix/js-core
         try {
-          var $ = cheerio.load(compiledTemplate._originalRender.apply(compiledTemplate, arguments)),
-          imageTags = $('img, picture > source, picture > img'),
-          client = new ImgixClient({ domain: 'ix-www.imgix.net' });
+          var parsedHTML = compiledTemplate._originalRender.apply(compiledTemplate, arguments),
+              $ = cheerio.load(parsedHTML),
+              imageTags = $('img, picture > source, picture > img'),
+              client = new ImgixClient({ domain: 'ix-www.imgix.net' });
 
           imageTags.each((index, imgTag) => {
             var attributes = imgTag.attribs,
-            path = attributes['ix-path'],
-            imgURL,
-            params,
-            maxWidth
+                path = attributes['ix-path'],
+                imgURL,
+                params,
+                maxWidth
 
             if (path) {
               client.settings.domain = attributes['ix-host'] ? attributes['ix-host'] : 'ix-www.imgix.net';
@@ -90,7 +91,7 @@ module.exports = function setupNunjucksPipeline(gulp) {
             delete params.w;
 
             attributes['srcset'] = client.buildSrcSet(path, params, { minWidth: 100, maxWidth: maxWidth });
-            attributes['sizes'] = attributes['sizes'] ?? '100vw';
+            attributes['sizes'] = (attributes['sizes'] ?? attributes['ix-sizes']) ?? '100vw';
           })
       
           return $.html();
