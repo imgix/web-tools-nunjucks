@@ -48,46 +48,51 @@ module.exports = function setupNunjucksPipeline(gulp) {
       compiledTemplate.render = function () {
         var parsedError;
 
+        //transforms html <img> and <picture> tags with @imgix/js-core
         try {
-          //load INJECTED and html-parsed template and select only all <img/> tags (for now), intiate imgix core client
           var $ = cheerio.load(compiledTemplate._originalRender.apply(compiledTemplate, arguments)),
-          imageTags = $('img'),
+          imageTags = $('img, picture > source, picture > img'),
           client = new ImgixClient({ domain: 'ix-www.imgix.net' });
 
-          //interate through each <img /> element
           imageTags.each((index, imgTag) => {
             var attributes = imgTag.attribs,
             path = attributes['ix-path'],
             imgURL,
-            params
-            
-            //if element has `ix-path` attribute, we can set host domain to `ix-host`, 
-            // otherwise the default is `ix-www.imgix.net` anyway
-            //set params to parsed `ix-params` or pass an empty object
-            if (path) {
-              if (attributes['ix-host']) client.settings.domain = attributes['ix-host'];
+            params,
+            maxWidth
 
+            if (path) {
+              client.settings.domain = attributes['ix-host'] ? attributes['ix-host'] : 'ix-www.imgix.net';
               params = attributes['ix-params'] ? JSON.parse(attributes['ix-params']) : {};
             }
 
-            //if element is using `ix-src` or `src` attribute, we can parse out that URL 
-            // and set the path and params from the URL
             else {
               imgURL = attributes['ix-src'] ? new URL(attributes['ix-src']) : new URL(attributes['src']);
 
-              if (imgURL.hostname !== client.settings.domain) client.settings.domain = imgURL.hostname;
-
+              client.settings.domain = imgURL.hostname;
               path = imgURL.pathname;
-
               params = Object.fromEntries(imgURL.searchParams);
             }
 
-            //set `src` and `srcset` attributes of <img/> tag.
-            attributes['src'] = client.buildURL(path, params);
+            params.auto = params.auto ? Array.from(new Set(params.auto.split(',')).add('compress').add('format')).join(',') : 'compress,format';
 
-            attributes['srcset'] = client.buildSrcSet(path, params);
+            if(params.w && params.h) {
+              params.ar = params.w + ':' + params.h;
+              params.fit = params.fit ?? 'crop';
+              
+              delete params.h;
+            }
+
+            maxWidth = Math.max(Number(params.w ?? 1800), 1800);
+            
+            if(imgTag.name === 'img') attributes['src'] = client.buildURL(path, params);
+
+            delete params.w;
+
+            attributes['srcset'] = client.buildSrcSet(path, params, { minWidth: 100, maxWidth: maxWidth });
+            attributes['sizes'] = attributes['sizes'] ?? '100vw';
           })
-          //return mutated html
+      
           return $.html();
         } catch (error) {
           parsedError = /^.*\[Line\s(\d+),\sColumn\s(\d+)\]\s*(.*)$/.exec(error.message);
