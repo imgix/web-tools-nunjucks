@@ -58,26 +58,24 @@ module.exports = function setupNunjucksPipeline(gulp) {
           imageTags.each((index, imgTag) => {
             var attributes = imgTag.attribs,
                 path = attributes['ix-path'],
+                params = attributes['ix-params'] ? JSON.parse(attributes['ix-params']) : {},
                 imgURL,
-                params,
                 maxWidth
 
             if (path) {
-              client.settings.domain = attributes['ix-host'] ? attributes['ix-host'] : 'ix-www.imgix.net';
-              params = attributes['ix-params'] ? JSON.parse(attributes['ix-params']) : {};
-            }
-
-            else {
+              client.settings.domain = attributes['ix-host'] ?? 'ix-www.imgix.net';
+            } else {
               imgURL = attributes['ix-src'] ? new URL(attributes['ix-src']) : new URL(attributes['src']);
-
               client.settings.domain = imgURL.hostname;
               path = imgURL.pathname;
-              params = Object.fromEntries(imgURL.searchParams);
+              params = Object.assign(Object.fromEntries(imgURL.searchParams), params);
             }
 
             params.auto = params.auto ? Array.from(new Set(params.auto.split(',')).add('compress').add('format')).join(',') : 'compress,format';
 
-            if(params.w && params.h) {
+            if (imgTag.name === 'img') attributes['src'] = client.buildURL(path, params);
+
+            if (params.w && params.h) {
               params.ar = params.w + ':' + params.h;
               params.fit = params.fit ?? 'crop';
               
@@ -85,9 +83,6 @@ module.exports = function setupNunjucksPipeline(gulp) {
             }
 
             maxWidth = Math.max(Number(params.w ?? 1800), 1800);
-            
-            if(imgTag.name === 'img') attributes['src'] = client.buildURL(path, params);
-
             delete params.w;
 
             attributes['srcset'] = client.buildSrcSet(path, params, { minWidth: 100, maxWidth: maxWidth });
