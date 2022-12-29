@@ -52,11 +52,8 @@ module.exports = function setupNunjucksPipeline(gulp) {
         try {
           var parsedHTML = compiledTemplate._originalRender.apply(compiledTemplate, arguments),
               $ = cheerio.load(parsedHTML),
-              scriptTags = $('script'),
               imageTags = $('img, picture > source, picture > img'),
               client = new ImgixClient({ domain: 'ix-www.imgix.net' });
-          
-          scriptTags.each((index, scriptTag) => scriptTag.attribs['defer'] = '');
 
           imageTags.each((index, imgTag) => {
             var attributes = imgTag.attribs,
