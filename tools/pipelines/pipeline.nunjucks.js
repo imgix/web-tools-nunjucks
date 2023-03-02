@@ -50,8 +50,13 @@ module.exports = function setupNunjucksPipeline(gulp) {
 
         //transforms html <img> and <picture> tags with @imgix/js-core
         try {
-          var parsedHTML = compiledTemplate._originalRender.apply(compiledTemplate, arguments),
-              $ = cheerio.load(parsedHTML),
+          var parsedHTML = compiledTemplate._originalRender.apply(compiledTemplate, arguments);
+
+          if (/xml|recent_posts|news/.test(file.path)) {
+            return parsedHTML;
+          }
+
+          var $ = cheerio.load(parsedHTML),
               imageTags = $('img, picture > source, picture > img'),
               client = new ImgixClient({ domain: 'ix-www.imgix.net' });
 
@@ -78,7 +83,7 @@ module.exports = function setupNunjucksPipeline(gulp) {
             if (params.w && params.h) {
               params.ar = params.w + ':' + params.h;
               params.fit = params.fit ?? 'crop';
-              
+
               delete params.h;
             }
 
@@ -88,7 +93,7 @@ module.exports = function setupNunjucksPipeline(gulp) {
             attributes['srcset'] = client.buildSrcSet(path, params, { minWidth: 100, maxWidth: maxWidth, disablePathEncoding: true });
             attributes['sizes'] = (attributes['sizes'] ?? attributes['ix-sizes']) ?? '100vw';
           })
-      
+
           return $.html();
         } catch (error) {
           parsedError = /^.*\[Line\s(\d+),\sColumn\s(\d+)\]\s*(.*)$/.exec(error.message);
