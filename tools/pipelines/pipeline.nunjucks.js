@@ -80,7 +80,7 @@ module.exports = function setupNunjucksPipeline(gulp) {
 
             if (imgTag.name === 'img') attributes['src'] = client.buildURL(path, params, { disablePathEncoding: true });
 
-            if (params.w && params.h) {
+            if (params.w && params.h && params.fit !== 'facearea') {
               params.ar = params.w + ':' + params.h;
               params.fit = params.fit ?? 'crop';
 
@@ -88,7 +88,10 @@ module.exports = function setupNunjucksPipeline(gulp) {
             }
 
             maxWidth = Math.max(Number(params.w ?? 1800), 1800);
-            delete params.w;
+
+            if (params.fit !== 'facearea') {
+              delete params.w;
+            }
 
             attributes['srcset'] = client.buildSrcSet(path, params, { minWidth: 100, maxWidth: maxWidth, disablePathEncoding: true });
             attributes['sizes'] = (attributes['sizes'] ?? attributes['ix-sizes']) ?? '100vw';
