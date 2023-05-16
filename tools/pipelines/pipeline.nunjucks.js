@@ -90,7 +90,24 @@ module.exports = function setupNunjucksPipeline(gulp) {
             // Add `compress` and `format` to the auto param if they aren't already there
             params.auto = params.auto ? Array.from(new Set(params.auto.split(',')).add('compress').add('format')).join(',') : 'compress,format';
 
-            if (imgTag.name === 'img') attributes['src'] = client.buildURL(path, params, { disablePathEncoding: true });
+            /**
+             * Disable encoding for base64 params to avoid double encoding
+             * @param {String} value
+             * @param {String} key
+             * @returns {Sting}
+             */
+            const encoder =(value, key) => {
+              return typeof key == 'string' && key?.substring(key.length-2, key.length) === '64' ? value : encodeURIComponent(value)
+            }
+
+            if (imgTag.name === 'img') attributes['src'] = client.buildURL(
+              path,
+              params,
+              {
+                disablePathEncoding: true,
+                encoder,
+              }
+            );
 
             maxWidth = Math.max(Number(params.w ?? 1800), 1800);
             minWidth = 100;
@@ -115,7 +132,16 @@ module.exports = function setupNunjucksPipeline(gulp) {
               delete params.w;
             }
 
-            attributes['srcset'] = client.buildSrcSet(path, params, { minWidth, maxWidth: maxWidth, disablePathEncoding: true });
+            attributes['srcset'] = client.buildSrcSet(
+              path,
+              params,
+              {
+                minWidth,
+                maxWidth: maxWidth,
+                disablePathEncoding: true,
+                encoder,
+              }
+            );
             attributes['sizes'] = (attributes['sizes'] ?? attributes['ix-sizes']) ?? '100vw';
           })
 
