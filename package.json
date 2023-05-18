@@ -1,6 +1,6 @@
 {
   "name": "web-tools-nunjucks",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "Web-tools pipeline for compiling Nunjucks templates",
   "repository": {
     "type": "git",
