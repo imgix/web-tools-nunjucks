@@ -118,7 +118,7 @@ module.exports = function setupNunjucksPipeline(gulp) {
             }
 
             // Params that require DPR srcsets
-            const useDprSrcset = params.fit === 'facearea' || !!params.mark;
+            const useDprSrcset = params.fit === 'facearea';
             /**
              * Passing `w` and `h` params to `buildSrcSet` will
              * create a DPR srcset. We remove the width and height attributes in
@@ -132,16 +132,26 @@ module.exports = function setupNunjucksPipeline(gulp) {
               delete params.w;
             }
 
-            attributes['srcset'] = client.buildSrcSet(
-              path,
-              params,
-              {
-                minWidth,
-                maxWidth: maxWidth,
-                disablePathEncoding: true,
-                encoder,
-              }
-            );
+            /**
+             * If the `mark` param is present, we need to disable adding the
+             * `srcset` attribute to the img tag. This is because the `mark`
+             * param image will receive a `w` param that is different from the
+             * `w` param of the main image. This will cause the `srcset` to
+             * contain the wrong widths.
+             */
+            if(!params.mark){
+              attributes['srcset'] = client.buildSrcSet(
+                path,
+                params,
+                {
+                  minWidth,
+                  maxWidth: maxWidth,
+                  disablePathEncoding: true,
+                  encoder,
+                }
+              );
+            }
+
             attributes['sizes'] = (attributes['sizes'] ?? attributes['ix-sizes']) ?? '100vw';
           })
 
